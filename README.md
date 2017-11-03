@@ -150,22 +150,6 @@ Q - quit
 Your selection? Q
 ```
 
-### (Optional) Other GPG Setup
-
-While you're here:
-```
-gpg/card> name
-Cardholder's surname: [Your last name]
-Cardholder's given name: [Your first name]
-[Enter your admin PIN]
-
-gpg/card> sex
-Sex ((M)ale, (F)emale or space): [Your gender]
-
-gpg/card> lang
-Language preferences: [Your two letter language code, example: en)
-```
-
 You can see the configuration by typing `list` on the `gpg/card>` prompt.
 
 https://www.yubico.com/support/knowledge-base/categories/articles/use-yubikey-openpgp/
@@ -179,8 +163,6 @@ You'll be using GPG keys as SSH keys, and we'll start by configuring GPG agent b
 ```bash
 pinentry-program /usr/local/MacGPG2/libexec/pinentry-mac.app/Contents/MacOS/pinentry-mac
 enable-ssh-support
-write-env-file
-use-standard-socket
 default-cache-ttl 600
 max-cache-ttl 7200
 ```
@@ -188,13 +170,9 @@ max-cache-ttl 7200
 and the below block into `~/.bash_profile`:
 
 ```bash
-GPG_TTY=$(tty)
-export GPG_TTY
-if [ -f "${HOME}/.gpg-agent-info" ]; then
-    . "${HOME}/.gpg-agent-info"
-    export GPG_AGENT_INFO
-    export SSH_AUTH_SOCK
-fi
+export GPG_TTY=$(tty)
+export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
+gpgconf --launch gpg-agent
 ```
 
 _Not sure if you have to logout/login or not here, to ensure GPG Tools can pickup the new config. I did just in case. You probably just have to restart GPG Agent and Bash._
@@ -204,7 +182,7 @@ Now, we'll convert your GPG public key to a SSH public key and add it to a serve
 1. `> gpg2 --card-edit`
 1. From the text that gets displayed (either automatically, or via the `gpg/card> list` command, grab the last 8 digits of the Authentication key hex code (let's say they are `EEEE FFFF` for the example)
 1. `gpg-card> quit`
-1. `gpgkey2ssh EEEEFFFF`
+1. `gpg2 --export-ssh-key EEEEFFFF > .ssh/yubikey-gpg.pub`
 1. Copy the public key and add it to the machine you want to SSH into
 1. Attempt to login to the machine via SSH
 
@@ -221,6 +199,7 @@ Now, we'll convert your GPG public key to a SSH public key and add it to a serve
 Thanks to the following people for instructions and help:
 
 - Yubico's own documentation (referenced inline in the instructions where used)
-- The [original version of this doc](https://github.com/liyanchang/yubikey-setup) by [David Chiang](https://github.com/liyanchang)
+- The [previous](https://github.com/liyanchang/yubikey-setup) [versions](https://github.com/plusjeff/yubikey-macos-setup) of this doc by [David Chiang](https://github.com/liyanchang)
 - [Instructions](http://florin.myip.org/blog/easy-multifactor-authentication-ssh-using-yubikey-neo-tokens) by [florin](http://florin.myip.org/blog/blogs/florin)
 - Debugging help from [Weaver](https://github.com/matthewjweaver)
+- [GPG for SSH Auth](https://ryanlue.com/posts/2017-06-29-gpg-for-ssh-auth)
